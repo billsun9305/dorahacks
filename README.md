@@ -27,18 +27,19 @@ This project contains a Solidity smart contract for managing donations in ETH an
 
 Execute the test suite with:
     ```
-    npx hardhat test
+    npm run test
     ```
+
 
 ## Deploying the Contract
 
 1. Compile the contract:
     ```
-    npx hardhat compile
+    npm run compile
     ```
 2. Deploy the contract:
     ```
-    npx hardhat run --network <network> scripts/deploy.js
+    npm run localnet
     ``` 
 
 
