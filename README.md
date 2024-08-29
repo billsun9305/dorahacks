@@ -30,6 +30,17 @@ Execute the test suite with:
     npx hardhat test
     ```
 
+## Deploying the Contract
+
+1. Compile the contract:
+    ```
+    npx hardhat compile
+    ```
+2. Deploy the contract:
+    ```
+    npx hardhat run --network <network> scripts/deploy.js
+    ``` 
+
 
 ## Contract Overview
 
