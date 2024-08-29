@@ -33,9 +33,7 @@ describe("Donation", function () {
       const initialBalance = await ethers.provider.getBalance(donor1);
 
       const ONE_ETH = ethers.parseEther("1.0");
-      await expect(donation.connect(donor1).donate({ value: ONE_ETH }))
-        .to.emit(donation, "DonationReceived")
-        .withArgs(donor1.address, ONE_ETH);
+      await donation.connect(donor1).donate({ value: ONE_ETH });
       expect(await donation.getDonationTotal(donor1.address)).to.equal(ONE_ETH);
 
       const finalBalance = await ethers.provider.getBalance(donor1);
@@ -57,6 +55,25 @@ describe("Donation", function () {
       expect(await donation.getDonationTotal(donor1.address)).to.equal(ethers.parseEther("2.0"));
     });
   });
+
+  describe("ERC20 Donations", function () {
+    it("Should donate ERC20 tokens", async function () {
+      const { donation, mockToken, donor1 } = await loadFixture(deploy);
+      const amount = ethers.parseEther("100");
+      await mockToken.mint(donor1.address, amount);
+      await mockToken.connect(donor1).approve(await donation.getAddress(), amount);
+      
+      await donation.connect(donor1).donateERC20(await mockToken.getAddress(), amount);
+      expect(await donation.getERC20DonationTotal(await mockToken.getAddress(), donor1.address)).to.equal(amount);
+    });
+
+    it("Should fail when donating 0 tokens", async function () {
+      const { donation, mockToken, donor1 } = await loadFixture(deploy);
+      await expect(donation.connect(donor1).donateERC20(await mockToken.getAddress(), 0))
+        .to.be.revertedWith("Donation must be greater than zero");
+    });
+  });
+
 
   describe("Donation History", function () {
     it("Should return all donations correctly", async function () {
@@ -100,27 +117,6 @@ describe("Donation", function () {
     });
   });
 
-  describe("ERC20 Donations", function () {
-    it("Should donate ERC20 tokens", async function () {
-      const { donation, mockToken, donor1 } = await loadFixture(deploy);
-      const amount = ethers.parseEther("100");
-      await mockToken.mint(donor1.address, amount);
-      await mockToken.connect(donor1).approve(await donation.getAddress(), amount);
-      
-      await expect(donation.connect(donor1).donateERC20(await mockToken.getAddress(), amount))
-        .to.emit(donation, "TokenDonationReceived")
-        .withArgs(donor1.address, await mockToken.getAddress(), amount);
-      
-      expect(await donation.getERC20DonationTotal(await mockToken.getAddress(), donor1.address)).to.equal(amount);
-    });
-
-    it("Should fail when donating 0 tokens", async function () {
-      const { donation, mockToken, donor1 } = await loadFixture(deploy);
-      await expect(donation.connect(donor1).donateERC20(await mockToken.getAddress(), 0))
-        .to.be.revertedWith("Donation must be greater than zero");
-    });
-  });
-
   describe("Withdrawals", function () {
     it("Should allow owner to withdraw ETH", async function () {
       const { donation, owner, donor1 } = await loadFixture(deploy);
@@ -129,18 +125,18 @@ describe("Donation", function () {
 
       const initialBalance = await ethers.provider.getBalance(owner.address);
       await donation.connect(owner).withdraw(ONE_ETH);
-      const finalBalance = await ethers.provider.getBalance(owner.address);
 
+      const finalBalance = await ethers.provider.getBalance(owner.address);
       expect(finalBalance).to.be.gt(initialBalance);
     });
 
     it("Should allow owner to withdraw ERC20 tokens", async function () {
       const { donation, mockToken, owner, donor1 } = await loadFixture(deploy);
       const amount = ethers.parseEther("100");
+
       await mockToken.mint(donor1.address, amount);
       await mockToken.connect(donor1).approve(await donation.getAddress(), amount);
       await donation.connect(donor1).donateERC20(await mockToken.getAddress(), amount);
-
       await expect(donation.connect(owner).withdrawERC20(await mockToken.getAddress(), amount))
         .to.changeTokenBalances(
           mockToken,
@@ -151,14 +147,61 @@ describe("Donation", function () {
 
     it("Should fail when non-owner tries to withdraw", async function () {
       const { donation, donor1 } = await loadFixture(deploy);
+
       await expect(donation.connect(donor1).withdraw(ethers.parseEther("1.0")))
         .to.be.revertedWithCustomError(donation, "OwnableUnauthorizedAccount");
     });
 
     it("Should fail when withdrawing more than available balance", async function () {
       const { donation, owner } = await loadFixture(deploy);
+
       await expect(donation.connect(owner).withdraw(ethers.parseEther("1.0")))
         .to.be.revertedWith("No funds to withdraw");
+    });
+  });
+
+  describe("Events", function () {
+    it("Should emit DonationReceived event when donating ETH", async function () {
+      const { donation, donor1 } = await loadFixture(deploy);
+      const ONE_ETH = ethers.parseEther("1.0");
+
+      await expect(donation.connect(donor1).donate({ value: ONE_ETH }))
+        .to.emit(donation, "DonationReceived")
+        .withArgs(donor1.address, ONE_ETH);
+    });
+
+    it("Should emit TokenDonationReceived event when donating ERC20", async function () {
+      const { donation, mockToken, donor1 } = await loadFixture(deploy);
+      const amount = ethers.parseEther("100");
+      await mockToken.mint(donor1.address, amount);
+      await mockToken.connect(donor1).approve(await donation.getAddress(), amount);
+
+      await expect(donation.connect(donor1).donateERC20(await mockToken.getAddress(), amount))
+        .to.emit(donation, "TokenDonationReceived")
+        .withArgs(donor1.address, await mockToken.getAddress(), amount);
+    });
+
+    it("Should emit DonationReceived event for minimum donation", async function () {
+      const { donation, donor1 } = await loadFixture(deploy);
+      const MIN_DONATION = 1n;
+    
+      await expect(donation.connect(donor1).donate({ value: MIN_DONATION }))
+        .to.emit(donation, "DonationReceived")
+        .withArgs(donor1.address, MIN_DONATION);
+    });
+
+    it("Should emit multiple events for multiple donations", async function () {
+      const { donation, donor1, donor2 } = await loadFixture(deploy);
+      const ONE_ETH = ethers.parseEther("1.0");
+      const TWO_ETH = ethers.parseEther("2.0");
+
+      await expect(donation.connect(donor1).donate({ value: ONE_ETH }))
+        .to.emit(donation, "DonationReceived")
+        .withArgs(donor1.address, ONE_ETH);
+
+      await expect(donation.connect(donor2).donate({ value: TWO_ETH }))
+        .to.emit(donation, "DonationReceived")
+        .withArgs(donor2.address, TWO_ETH);
     });
   });
 });
