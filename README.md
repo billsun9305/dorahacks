@@ -26,21 +26,19 @@ This project contains a Solidity smart contract for managing donations in ETH an
 ## Running Tests
 
 Execute the test suite with:
-    ```
-    npm run test
-    ```
+```
+npm run test
+```
 
 
 ## Contract Interaction Script
 
 The project includes an interaction script (`scripts/interact.js`) that demonstrates how to deploy and interact with the Donation contract and a mock ERC20 token.
 
-### Usage
-
 To run the interaction script:
-    ```
-    npx run interact
-    ``` 
+```
+npm run interact
+``` 
 
 This script does the following:
 1. Deploys the Donation contract and a MockERC20 token contract
