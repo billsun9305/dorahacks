@@ -1,6 +1,6 @@
 # Donation Smart Contract
 
-This project contains a Solidity smart contract for managing donations in ETH and ERC20 tokens, along with comprehensive tests.
+This project contains a Solidity smart contract for managing donations in ETH and ERC20 tokens, along with comprehensive tests and an interaction script.
 
 ## Features
 
@@ -29,6 +29,25 @@ Execute the test suite with:
     ```
     npm run test
     ```
+
+
+## Contract Interaction Script
+
+The project includes an interaction script (`scripts/interact.js`) that demonstrates how to deploy and interact with the Donation contract and a mock ERC20 token.
+
+### Usage
+
+To run the interaction script:
+    ```
+    npx run interact
+    ``` 
+
+This script does the following:
+1. Deploys the Donation contract and a MockERC20 token contract
+2. Mints tokens to two donor accounts
+3. Makes ETH and token donations from both donors
+4. Retrieves and displays the donation history
+5. Shows the total balance of both ETH and tokens in the contract
 
 
 ## Deploying the Contract
